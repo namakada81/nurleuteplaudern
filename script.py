@@ -67,10 +67,10 @@ def mine_words(min_relevance):
 
 def analyze():
     with open("results.pickle", "rb") as f:
-        results = pickle.lead(f)
+        results = pickle.load(f)
     
     sqrt_freq = Counter()
-    for s_id, freq in results:
+    for s_id, freq in results.items():
         if s_id == 'total':
             continue
 
