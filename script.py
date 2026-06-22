@@ -71,7 +71,7 @@ def mine_words(min_relevance):
     with open("results_nltk_corpus.pickle", "wb") as f:
         pickle.dump(results, f)
 
-def filter_distinct_words(results, remove_top_n = 200, keep_top_n=50):
+def filter_distinct_words(results, remove_top_n, keep_top_n):
     """
     Removes universally common words across Reddit and isolates 
     the top highly-specific words for each individual subreddit.
@@ -90,7 +90,7 @@ def filter_distinct_words(results, remove_top_n = 200, keep_top_n=50):
     # Extract just the string names of the words to remove
     top_noisy_tuples = global_noise.most_common(remove_top_n)
     words_to_remove = set(word for word, count in top_noisy_tuples)
-    print(f"Removing the top {remove_top_n} globally noisy words...")
+    print(f"Removing the top {remove_top_n} globally noisy words: {words_to_remove}")
 
     # --- 2. Filter Subreddits ---
     filtered_subreddits = {}
@@ -109,45 +109,50 @@ def filter_distinct_words(results, remove_top_n = 200, keep_top_n=50):
         
     return filtered_subreddits
 
-def visualize_network(similarity_df, threshold=0.3):
+def visualize_network(similarity_df, threshold=0.15, max_edges_per_node=5, remove_isolated_nodes=False):
     """
     Builds an interactive HTML network graph from the similarity matrix.
-    Only draws lines between subreddits if their similarity > threshold.
+    Limits connections to a strict maximum per node to prevent central blob hubs.
     """
-    print(f"Generating network graph (Threshold: {threshold})...")
+    print(f"Generating network graph (Threshold: {threshold}, Max Edges: {max_edges_per_node})...")
     
     # 1. Initialize a NetworkX graph
     G = nx.Graph()
     
     # 2. Add nodes (subreddits)
     for sub in similarity_df.index:
-        G.add_node(sub, title=sub) # 'title' is the hover tooltip in PyVis
+        G.add_node(sub, title=sub)
 
-    # 3. Add edges (Combined Top-K and Threshold)
-    K = 3               # Max connections per subreddit
-    threshold = 0.15    # Minimum similarity score required
-    
-    for target_sub in similarity_df.index:
-        # Sort similarities for this sub, skip the first one (which is itself)
-        top_matches = similarity_df[target_sub].sort_values(ascending=False)[1:K+1]
-        
-        for neighbor_sub, score in top_matches.items():
-            # Only connect them if they pass the minimum threshold
+    # 3. Extract all unique pairs of subreddits that pass the threshold
+    edges = []
+    subreddits = similarity_df.columns
+    for i in range(len(subreddits)):
+        # Start j at i + 1 to avoid duplicate edges (A->B and B->A) and self-loops (A->A)
+        for j in range(i + 1, len(subreddits)): 
+            score = similarity_df.iloc[i, j]
             if score >= threshold:
-                # NetworkX automatically handles duplicates (A->B is the same as B->A)
-                G.add_edge(target_sub, neighbor_sub, weight=score, value=score * 5)
+                edges.append((score, subreddits[i], subreddits[j]))
 
-    # 4. Clean up orphans (nodes that failed the threshold test)
-    isolated_nodes = list(nx.isolates(G))
-    G.remove_nodes_from(isolated_nodes)
-    print(f"Removed {len(isolated_nodes)} unconnected subreddits from the view.")
+    # 4. Sort all edges globally from strongest similarity to weakest
+    edges.sort(reverse=True, key=lambda x: x[0])
+
+    # 5. Add edges sequentially while respecting the strict degree limit
+    for score, sub_A, sub_B in edges:
+        # Check current connection count (degree) of both nodes
+        if G.degree(sub_A) < max_edges_per_node and G.degree(sub_B) < max_edges_per_node:
+            G.add_edge(sub_A, sub_B, weight=score, value=score * 5)
+
+    # 6. Clean up orphans (nodes that ended up with 0 connections)
+    if remove_isolated_nodes:
+        isolated_nodes = list(nx.isolates(G))
+        G.remove_nodes_from(isolated_nodes)
+        print(f"Removed {len(isolated_nodes)} unconnected subreddits from the view.")
                 
-    # 4. Create the PyVis network from NetworkX
-    # physics=True makes the nodes dynamically push and pull each other
+    # 7. Create the PyVis network from NetworkX
     net = Network(height="800px", width="100%", bgcolor="#222222", font_color="white")
     net.from_nx(G)
     
-    # 5. Save and open the interactive HTML file
+    # 8. Save and open the interactive HTML file
     net.show("subreddit_clusters.html", notebook=False)
     print("Graph saved to subreddit_clusters.html! Open it in your browser.")
 
@@ -155,7 +160,7 @@ def analyze():
     with open("results_cleaned.pickle", "rb") as f:
         results = pickle.load(f)
 
-    subreddit_data = filter_distinct_words(results, remove_top_n=20, keep_top_n=100)
+    subreddit_data = filter_distinct_words(results, remove_top_n=200, keep_top_n=100)
 
     subreddit_names = list(subreddit_data.keys())
     word_score_dicts = list(subreddit_data.values())
@@ -183,7 +188,7 @@ def analyze():
         columns=subreddit_names
     )
 
-    visualize_network(similarity_df, threshold=0.2)
+    visualize_network(similarity_df, threshold=0.01, max_edges_per_node=5, remove_isolated_nodes=False)
 
     # --- View the Results ---
     if len(subreddit_names) > 0:
