@@ -1,0 +1,8 @@
+streamlit
+networkx
+pyvis
+pandas
+scikit-learn
+nltk
+datasets
+pyarrow
