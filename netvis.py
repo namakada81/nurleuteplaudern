@@ -12,8 +12,6 @@ from sklearn.metrics.pairwise import cosine_similarity
 import tempfile
 import nltk
 
-nltk.download('words')
-
 @st.cache_data
 def load_data():
     with open("results_0.0000001_300_freq.pickle", "rb") as f:
@@ -188,9 +186,12 @@ def generate_similarity_matrix(data, representation="tfidf", use_svd=True, min_r
 
     # --- Step 4: SVD Dimensionality Reduction (If selected) ---
     if use_svd:
-        n_components = min(100, working_matrix.shape[0] - 1)
+        # NEW LOGIC: Bound the components by both rows (subs) AND columns (words)
+        n_components = min(100, working_matrix.shape[0] - 1, working_matrix.shape[1] - 1)
+        
+        # If the filter left us with 0 or 1 words, SVD is mathematically impossible
         if n_components <= 0:
-            st.warning("Not enough data to run SVD. Adjust filters to include more subreddits.")
+            st.warning(f"Not enough words left to run SVD (Only {working_matrix.shape[1]} words survived). Try lowering your relevance threshold or adjusting your standard word filters.")
             st.stop()
             
         svd = TruncatedSVD(n_components=n_components, random_state=42)
@@ -219,28 +220,27 @@ def main():
         return
 
 
-
     st.sidebar.header("Pre Filtering Controls")
-    number_of_subreddits = st.sidebar.number_input(
+    number_of_subreddits = st.sidebar.slider(
         "Number of Subreddits", 
         min_value=1, max_value=len(tokenized_data), value=min(100,len(tokenized_data)), step=1,
         help="Look only at the top n subreddits with the most posts"
     )
     remove_standard_words = st.sidebar.checkbox("Remove Standard English Words", value=False)
-    max_subreddit_percentage = st.sidebar.number_input(
+    max_subreddit_percentage = st.sidebar.slider(
         "Max Subreddit Appearance (%)", 
-        min_value=0.1, max_value=100.0, value=80.0, step=0.1,
+        min_value=0.0, max_value=100.0, value=80.0, step=1.0,
         help="If a word appears in more than this % of subreddits, it is removed as noise."
     )
-    keep_top_n = st.sidebar.number_input(
+    keep_top_n = st.sidebar.slider(
         "Keep Top N Words per Sub", 
-        min_value=10, max_value=500, value=100, step=1,
+        min_value=10, max_value=500, value=100, step=10,
         help="How many unique words to keep for defining each subreddit's 'topic'."
     )
     st.sidebar.header("Graph Controls")  
-    graph_edge_similarity_threshold = st.sidebar.number_input(
+    graph_edge_similarity_threshold = st.sidebar.slider(
         "Similarity Threshold", 
-        min_value=0.00, max_value=1.00, value=0.01, step=0.001,
+        min_value=0.0, max_value=1.0, value=0.10, step=0.001,
         help="Minimum cosine similarity score required to draw an edge."
     )
     max_edges = st.sidebar.number_input(
@@ -261,12 +261,11 @@ def main():
     min_rel = 0.0
     if rep_choice == "relevance":
         min_rel = st.sidebar.slider(
-            "Minimum Relevance Threshold", 
+            "Minimum Relevance Threshold (x10000)", 
             min_value=0.0, 
-            max_value=0.01, 
-            value=0.0001, 
-            step=0.0001,
-            format="%.5f"
+            max_value=5.0,
+            value=0.1, 
+            step=0.01,
         )
     use_svd_toggle = st.sidebar.checkbox("Use SVD Dimensionality Reduction", value=True)
     
@@ -288,7 +287,7 @@ def main():
             data=data, 
             representation=rep_choice, 
             use_svd=use_svd_toggle,
-            min_relevance=min_rel
+            min_relevance=min_rel / 10000
         )
 
     # --- Rendering Pyvis Graph ---

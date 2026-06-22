@@ -1,4 +1,5 @@
 import nltk
+nltk.download('words')
 from collections import Counter
 from datasets import load_dataset
 import pickle
