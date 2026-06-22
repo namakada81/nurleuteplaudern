@@ -35,40 +35,33 @@ def clean_and_count(df):
     return full_freq
 
 
-def mine_words(min_relevance):
+def mine_words(filename, min_relevance=0.00001, top_n_subs=100):
     ds = load_dataset("webis/tldr-17", revision="refs/convert/parquet")
     ds = ds['train']
     df = ds.to_pandas()
     print(len(ds))
 
-    nltk_words = [word.lower() for word in nltk.corpus.words.words()]
-    spell = SpellChecker()
-    spell.word_frequency.load_words(nltk_words)
+    #nltk_words = [word.lower() for word in nltk.corpus.words.words()]
+    #spell = SpellChecker()
+    #spell.word_frequency.load_words(nltk_words)
 
-    id_to_name = df.drop_duplicates(subset=['subreddit_id']).set_index('subreddit_id')['subreddit'].to_dict()
-
-    top_100_subs = df['subreddit_id'].value_counts().head(100).index.tolist()
-    total_freq = Counter()
+    top_subs = df['subreddit'].value_counts().head(top_n_subs).index.tolist()
 
     results = {}
-    print(top_100_subs)
-    for s_id in top_100_subs:
+    print(top_subs)
+    for idx, subreddit in enumerate(top_subs):
         # find common words in the subreddit
-        filtered = df[df['subreddit_id'] == s_id]
+        filtered = df[df['subreddit'] == subreddit]
         full_freq = clean_and_count(filtered)
 
         # apply cutoff to only consider the most common words
-        subreddit_words_with_relevance = {word: count / full_freq.N() for word, count in full_freq.items() if word not in spell and count / full_freq.N() >= min_relevance}
+        subreddit_words_with_relevance = {word: count / full_freq.N() for word, count in full_freq.items() if count / full_freq.N() >= min_relevance}
         final_flagged = Counter(subreddit_words_with_relevance)
-        total_freq.update(final_flagged)
-        results[s_id] = final_flagged
+        results[subreddit] = {'size_idx': idx, 'counter': final_flagged}
 
-        print(f'{id_to_name[s_id]}({len(final_flagged)}): {final_flagged.most_common()}')
-        
-    results['total'] = total_freq
-    print(f'total log freq: {total_freq.most_common()}')
+        print(f'{subreddit}({len(final_flagged)}): {final_flagged.most_common()}')
 
-    with open("results_nltk_corpus.pickle", "wb") as f:
+    with open(filename, "wb") as f:
         pickle.dump(results, f)
 
 def filter_distinct_words(results, remove_top_n, keep_top_n):
@@ -201,6 +194,6 @@ def analyze():
         for sub, score in similar_subs.items():
             print(f"  {sub}: {score:.3f} similarity")
 
-analyze()
+#analyze()
 
-#mine_words(0.00001)
+mine_words("results_0.0000001_300.pickle", min_relevance=0.000005, top_n_subs=300)
