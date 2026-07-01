@@ -22,20 +22,20 @@ def load_nltk_words():
     nltk.download('words', quiet=True)
     return set(word.lower() for word in nltk.corpus.words.words())
 
-def visualize_network(similarity_df, threshold, max_edges_per_node, subreddit_data, remove_isolated_nodes=False):
+def visualize_network(similarity_df, threshold, max_edges_per_node, subreddit_data, display_scores, remove_isolated_nodes=False):
     G = nx.Graph()
-    
+
     for sub in similarity_df.index:
         top_words = []
-        if sub in subreddit_data:
-            sorted_words = sorted(subreddit_data[sub]["counter"].items(), key=lambda item: item[1], reverse=True)
+        if sub in display_scores:
+            sorted_words = sorted(display_scores[sub].items(), key=lambda item: item[1], reverse=True)
             top_words = [word for word, score in sorted_words[:10]]
-            
+
         if top_words:
             node_tooltip = f"r/{sub}\nTop Words:\n" + "\n".join(f"- {w}" for w in top_words)
         else:
             node_tooltip = f"r/{sub}"
-            
+
         G.add_node(sub, title=node_tooltip)
 
     edges = []
@@ -50,13 +50,13 @@ def visualize_network(similarity_df, threshold, max_edges_per_node, subreddit_da
 
     for score, sub_A, sub_B in edges:
         if G.degree(sub_A) < max_edges_per_node and G.degree(sub_B) < max_edges_per_node:
-            
-            words_A = set(subreddit_data[sub_A]["counter"].keys())
-            words_B = set(subreddit_data[sub_B]["counter"].keys())
+
+            words_A = set(display_scores.get(sub_A, {}).keys())
+            words_B = set(display_scores.get(sub_B, {}).keys())
             shared = words_A.intersection(words_B)
-            
+
             shared_scored = [
-                (w, subreddit_data[sub_A]["counter"][w] + subreddit_data[sub_B]["counter"][w]) 
+                (w, display_scores[sub_A].get(w, 0) + display_scores[sub_B].get(w, 0))
                 for w in shared
             ]
             shared_scored.sort(key=lambda x: x[1], reverse=True)
@@ -151,19 +151,20 @@ def generate_similarity_matrix(data, representation="tfidf", use_svd=True, min_r
     """
     Dynamically builds a similarity matrix based on user-selected techniques.
     Representation options: 'raw', 'relevance', 'tfidf'
+    Also returns per-subreddit word scores for display in tooltips.
     """
     subreddit_names = list(data.keys())
-    
+
     # --- Step 1: Base Representation ---
     if representation == "relevance":
         word_score_dicts = []
         for val in data.values():
             counter = val["counter"]
             total_words = val["full_freq_n"]
-            
+
             relevance_dict = {
-                word: count / total_words 
-                for word, count in counter.items() 
+                word: count / total_words
+                for word, count in counter.items()
                 if (count / total_words) >= min_relevance
             }
             word_score_dicts.append(relevance_dict)
@@ -181,32 +182,41 @@ def generate_similarity_matrix(data, representation="tfidf", use_svd=True, min_r
 
     # --- Step 3: TF-IDF (If selected) ---
     if representation == "tfidf":
-        tfidf_transformer = TfidfTransformer()
+        tfidf_transformer = TfidfTransformer(sublinear_tf=True)
         working_matrix = tfidf_transformer.fit_transform(working_matrix)
+
+    # Build per-subreddit word score dicts for tooltip display, reflecting the
+    # actual representation (raw counts, relevance, or TF-IDF weights).
+    feature_names = vectorizer.get_feature_names_out()
+    display_scores = {}
+    dense = working_matrix.toarray() if hasattr(working_matrix, "toarray") else working_matrix
+    for i, name in enumerate(subreddit_names):
+        row = dense[i]
+        display_scores[name] = {feature_names[j]: float(row[j]) for j in row.nonzero()[0]}
 
     # --- Step 4: SVD Dimensionality Reduction (If selected) ---
     if use_svd:
-        # NEW LOGIC: Bound the components by both rows (subs) AND columns (words)
+        # Bound the components by both rows (subs) AND columns (words)
         n_components = min(100, working_matrix.shape[0] - 1, working_matrix.shape[1] - 1)
-        
+
         # If the filter left us with 0 or 1 words, SVD is mathematically impossible
         if n_components <= 0:
             st.warning(f"Not enough words left to run SVD (Only {working_matrix.shape[1]} words survived). Try lowering your relevance threshold or adjusting your standard word filters.")
             st.stop()
-            
+
         svd = TruncatedSVD(n_components=n_components, random_state=42)
         working_matrix = svd.fit_transform(working_matrix)
 
     # --- Step 5: Cosine Similarity ---
-    # working_matrix could now be raw counts, TF-IDF, or SVD components. 
+    # working_matrix could now be raw counts, TF-IDF, or SVD components.
     # Cosine similarity works on all of them.
     similarity_matrix = cosine_similarity(working_matrix)
-    
+
     similarity_df = pd.DataFrame(
         similarity_matrix, index=subreddit_names, columns=subreddit_names
     )
-    
-    return similarity_df
+
+    return similarity_df, display_scores
 
 def main():
     st.set_page_config(layout="wide")
@@ -256,23 +266,23 @@ def main():
     rep_choice = st.sidebar.selectbox(
         "Word Representation", 
         options=["tfidf", "raw", "relevance"],
-        format_func=lambda x: {"tfidf": "TF-IDF", "raw": "Raw Word Counts", "relevance": "Naive Frequency (Relevance)"}[x]
+        format_func=lambda x: {"tfidf": "TF-IDF", "raw": "Raw Word Counts", "relevance": "Relative Relevance"}[x]
     )
     min_rel = 0.0
     if rep_choice == "relevance":
         min_rel = st.sidebar.slider(
-            "Minimum Relevance Threshold (x10000)", 
+            "Minimum Relevance Threshold (x10000^-1)", 
             min_value=0.0, 
             max_value=5.0,
             value=0.1, 
             step=0.01,
         )
-    use_svd_toggle = st.sidebar.checkbox("Use SVD Dimensionality Reduction", value=True)
+    use_svd_toggle = st.sidebar.checkbox("Use Latent Semantic Analysis", value=True)
     
 
     # --- Data Pipeline ---
     with st.spinner("Recalculating Matrix..."):
-        data = {k: dict(v) for k, v in tokenized_data.items()}
+        data = {k: {**v, "counter": dict(v["counter"])} for k, v in tokenized_data.items()}
 
         pre_filter_data(
             data=data,
@@ -283,9 +293,9 @@ def main():
             top_n=keep_top_n
         )
 
-        similarity_df = generate_similarity_matrix(
-            data=data, 
-            representation=rep_choice, 
+        similarity_df, display_scores = generate_similarity_matrix(
+            data=data,
+            representation=rep_choice,
             use_svd=use_svd_toggle,
             min_relevance=min_rel / 10000
         )
@@ -293,10 +303,11 @@ def main():
     # --- Rendering Pyvis Graph ---
     with st.spinner("Generating Graph... Hover over edges to see shared words!"):
         html_file_path = visualize_network(
-            similarity_df, 
-            threshold=graph_edge_similarity_threshold, 
-            max_edges_per_node=max_edges, 
-            subreddit_data=data, # Passed in to calculate overlaps
+            similarity_df,
+            threshold=graph_edge_similarity_threshold,
+            max_edges_per_node=max_edges,
+            subreddit_data=data,
+            display_scores=display_scores,
             remove_isolated_nodes=remove_isolated
         )
         
