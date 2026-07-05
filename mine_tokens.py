@@ -51,4 +51,5 @@ def mine_words(filename, min_relevance=0.00001, top_n_subs=100):
     with open(filename, "wb") as f:
         pickle.dump(results, f)
 
-mine_words("results_0.0000001_300_freq.pickle", min_relevance=0.00000001, top_n_subs=300)
+if __name__ == "__main__":
+    mine_words("results_0.0000001_300_freq.pickle", min_relevance=0.00000001, top_n_subs=300)

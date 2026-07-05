@@ -21,7 +21,7 @@ The corpus is heavily skewed. A handful of large subreddits contribute most of t
 
 MAYBE TALK ABOUT DEPENDENCIES
 
-The pipeline splits into two stages. `tokenize.py` does the expensive one-time work of counting words per subreddit and saves the result to a pickle. `netvis.py` is a Streamlit app that loads that pickle and builds the graph live, so every filter and parameter can be changed without recomputing anything.
+The pipeline splits into two stages. `mine_tokens.py` does the expensive one-time work of counting words per subreddit and saves the result to a pickle. `netvis.py` is a Streamlit app that loads that pickle and builds the graph live, so every filter and parameter can be changed without recomputing anything.
 
 ### Vocabulary Building
 

@@ -11,6 +11,9 @@ from sklearn.feature_extraction.text import TfidfTransformer
 from sklearn.metrics.pairwise import cosine_similarity
 import tempfile
 import nltk
+from network_analysis import analyze  # network analysis feature (added)
+
+#Start: streamlit run netvis.py
 
 @st.cache_data
 def load_data():
@@ -313,8 +316,16 @@ def main():
         
         with open(html_file_path, 'r', encoding='utf-8') as f:
             html_data = f.read()
-            
+
         components.html(html_data, height=750)
+
+    # --- Network analysis---
+    # Runs community detection, betweenness and percolation on the current similarity matrix.
+    if st.sidebar.button("Run Network Analysis"):
+        st.subheader("Network Analysis (current filter settings)")
+        with st.spinner("Analyzing network..."):
+            report = analyze(similarity_df)
+        st.code(report)
 
 if __name__ == "__main__":
     main()
