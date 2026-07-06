@@ -66,14 +66,18 @@ def analyze(sim, k=8):
             if sub not in first_edge and step_graph.degree(sub) > 0:
                 first_edge[sub] = t
 
-    # Islands: subreddits that only connect at a low threshold, or never.
-    # A subreddit that never connects gets -1 so it sorts to the top as most isolated.
+    #Create hierarchical bitree of communities for visualization for report?
+
+
+    # Islands: subreddits whose closest neighbor is furthest away
+    # Low max similarity = language resembles no other subreddit
     report.append("")
     report.append("Unique language: Most isolated subreddits (linguistic islands):")
-    islands = sorted(subreddits, key=lambda sub: first_edge.get(sub, float('inf')))       # Sort by isolation level
-    for sub in islands[:10]:                                # Loop top ten isolated
-        threshold = first_edge.get(sub, "never")
-        report.append(f"  first edge at t={threshold}  r/{sub}")
+    max_sim = matrix.copy()                 # Copy similarity matrix
+    np.fill_diagonal(max_sim, -1)           # Ignore self-similarity (always 1.0)
+    best = max_sim.max(axis=1)              # Each subreddit's closest neighbor similarity
+    for i in np.argsort(best)[:10]:         # Ten subreddits with the weakest best match
+        report.append(f"  max similarity {best[i]:.3f}  r/{subreddits[i]}")
 
     return "\n".join(report)
 
