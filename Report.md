@@ -51,60 +51,53 @@ This gives us the term frequencies for each subreddit, i.e. its raw vocabulary r
 
 ### Graph Generation Pipeline 
 
-To allow for flexible data exploration, we created a graphical interface to easily adjust important parameters. The pipeline can be split up into three parts:
+To allow for flexible data exploration, we created a graphical interface to easily adjust important parameters. The pipeline can be split up into five parts:
 
-**1. Filtering.** 
+**1. Filtering:** 
 Some words are useless for telling communities apart. Function words like "the" and "and" appear everywhere, so we optionally remove standard English words using NLTK's word list using the option *Remove Standard English Words*.
 We also drop words that appear in more than a set percentage of all subreddits (e.g. 80%). Increasing this threshold keeps more common words, while decreasing the threshold removes most shared words such that only highly specific words remain. Finally we keep only the subreddits N (e.g. 100) most relevant words for further processing. This method gives us a word vector with words that are fairly common between some subreddits, but do not appear in most subreddits, which we can use to compare the language used in the subreddits.
 
-**Representation.** We implemented three different featurization options:
+**2. Representation:** We implemented three different featurization options:
 
 - *Raw counts*; as the baseline, where the total number of occurences of a word in each subreddit is encoded. This does not take into account the size of the subreddits text data.
-- *Relevance*; each count divided by the subreddit's total word count, so big subreddits don't dominate.
+- *Relevance*; each count divided by the subreddit's total word count, so big subreddits don't dominate. We also added an additional filter to only keep words with a minimum relevance score that can be adjusted, such that exremely rare words that do not really represent the subreddits language get filtered out (primarily useful when keeping a lot of words per subreddit, to only keep the words with a high relevance).
 - *TF-IDF*; down-weights words common across many subreddits and up-weights the distinctive ones.
 
-**Dimensionality reduction.** Optionally we apply Latent Semantic Analysis to project the sparse term matrix down to at most 100 components, smoothing out noise and grouping words that co-occur.
+**3. Dimensionality reduction:** Optionally we apply Latent Semantic Analysis to project the sparse term matrix down to at most 100 components, yielding higher similarity scores for semantically similar subreddits.
 
-**Similarity.** Whatever the representation, we compute the cosine similarity between every pair of subreddits, giving a 300×300 similarity matrix.
+**4. Similarity calculation:** Whatever the representation, we compute the cosine similarity between every pair of subreddits, giving a similarity matrix.
 
-<!-- FIGURE 4: A heatmap of the similarity matrix, with rows/columns ordered by cluster (e.g. via hierarchical clustering). If the method works, you should see bright blocks on the diagonal — this is strong visual evidence and worth including. Consider showing it for TF-IDF vs raw counts side by side. -->
 
-**Graph construction.** To construct the graph, we draw an edge between two subreddits when their similarity clears a threshold. To eliminate clutter created by highly connective subreddits, we implemented an upper limit for node degrees.The result is rendered with Pyvis, so you can drag nodes around, hover a node to see its top words, and hover an edge to see the words two subreddits share.
-
+**5. Graph construction and analysis:** To construct the graph, we draw an edge between two subreddits when their similarity clears a threshold. To eliminate clutter created by highly connective subreddits, we implemented an upper limit for node degrees.The result is rendered with Pyvis, so you can drag nodes around, hover a node to see its top words, and hover an edge to see the words two subreddits share. This allows for a highly interactive exploration of the resulting graph and facilitates an easy comparation between the pipelines options to find differences and similarities between the implemented possible options. Additionally, we also implemented three graph analysis methods that calculate different matrics for the resulting graph:
+- *Language Communities:* This method aims at finting clusters with high connectiveness in the graph. Depenging on the paramteters, this usually returns clusters with shared topics, such as Gaming (DestinyTheGame, Diablo, DnD, DotA2, Eve, Games, GlobalOffensive, Guildwars2) or Relationships (AskMen, AskReddit, AskWomen, OkCupid, TwoXChromosomes, relationship_advice, relationships, sex).
+- *Language Translators:* This method finds subreddits that act as bridges between subreddits. These subreddits have similar vocabulary to many other subreddits which are not strongly connteced to each other.
+- *Isolated Subreddits:* These subreddits are the ones which have the lowest maximum similarity to all other subreddits.
+ 
 ## Results and Discussion
 
-In this section we discuss 3 example setups, one for each of the word representations. We do this to highlight the strenghts of each of the representations and encourage the reader to try out other setups.
+### Exploring the Graph
+The interactive App can be used to explore different settings and the resulting graphs. Using the default settings we chose, the resulting graph looks like th
+is: ![Default graph](figures/default_settings.png)
 
-### Baseline
+We can easily find many clusters that intuitively make sense, such as the tech cluster:
+![alt text](figures/tech_cluster.png)
+or the politics cluster:
+![alt text](figures/politics_cluster.png)
+or the religion cluster:
+![alt text](figures/religion_cluster.png) 
 
-Allow all words
-reuslts in fully connected graph
+Most connections in the graph make sense intuitively, and the edges can be inspected showing the top shared words between the subreddit. For example, ADHD and Drugs both seem to commonly talk about ADHD medication which seem to commonly be absused as drugs:
+![alt text](figures/drugs_adhd.png)
+
+### Exploring parameter settings
+We discovered that even slight changes of some paramters can cause vastly different looking graphs. For example changing the similarity theshold from the default 0.07 to slightly higher values results in a way less connected graph and many isolated nodes, showing that most of the similarity scores are rather small, while some parameters such as keep top N words have a smaller impact on the resulting graph and usually only slightly change the similarity scores between subreddits.
+
+The max subreddit apprearance parameter also has a high impact on most of the graph, where an decrease in allowed subreddit appearance (= filtering out more of the common shared words) quickly leads to a highly disconnected graph when not adjusting the other parameters. Interestingly in this scenario, we can see that some highly specific clusters (like the League of Legends / Smite / Dota cluster) still stay connected, because they have a really large vocabulary of unique words (e.g. champion names, specific gaming terms like "ult", "gank", or "laning" which do not get filtered out even with the higher filtering settings), while more general connections get removed rather quickly.
+
+![Full graph at 25% appearance](figures/appearance_25.png) ![Full graph at 60% appearance](figures/appearance_60.png) ![cluster at 25% appearance](figures/lol_25.png) ![cluster at 60% appearance](figures/lol_60.png)
 
 
-### Use MaxSubredditAp
+We also investigated the difference between the different featurization methods (raw word count, relevance, tf-idf) and concluded that while there are slight differences, the general appearance of the graph stays mostly the same. Also, not using latent semantic analysis to reduce the number of dimensions generally decreases similarity scores and connectedness of the graph, but this can be counteracted by decreasing the similarity threshold as well.
 
-Big improvement
-MAx 90
-Works better, see clusters
-
-Max 20
-Less clusters, barely connected 
-Get highly specific lingo
-
-
-
-### Keep top N words
-
-Increasing Feature Size allows removal of MaxSub if increase of Similarity Threshhold
-
-### Similarity Threshhold 
-
-Hyperparameter
-
-### Relevance Changes somethin
-
-### DF IDF
-
-Works great without filters
-
+Overall, we conclude that any of the featurization methods can yield interesting and meaningful results, if the parameters are tuned accordingly. 
 

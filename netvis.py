@@ -236,29 +236,29 @@ def main():
     st.sidebar.header("Pre Filtering Controls")
     number_of_subreddits = st.sidebar.slider(
         "Number of Subreddits", 
-        min_value=1, max_value=len(tokenized_data), value=min(100,len(tokenized_data)), step=1,
+        min_value=1, max_value=len(tokenized_data), value=min(150,len(tokenized_data)), step=1,
         help="Look only at the top n subreddits with the most posts"
     )
     remove_standard_words = st.sidebar.checkbox("Remove Standard English Words", value=False)
     max_subreddit_percentage = st.sidebar.slider(
         "Max Subreddit Appearance (%)", 
-        min_value=0.0, max_value=100.0, value=80.0, step=1.0,
+        min_value=0.0, max_value=100.0, value=60.0, step=1.0,
         help="If a word appears in more than this % of subreddits, it is removed as noise."
     )
     keep_top_n = st.sidebar.slider(
         "Keep Top N Words per Sub", 
-        min_value=10, max_value=500, value=100, step=10,
+        min_value=10, max_value=500, value=300, step=10,
         help="How many unique words to keep for defining each subreddit's 'topic'."
     )
     st.sidebar.header("Graph Controls")  
     graph_edge_similarity_threshold = st.sidebar.slider(
         "Similarity Threshold", 
-        min_value=0.0, max_value=1.0, value=0.10, step=0.001,
+        min_value=0.0, max_value=1.0, value=0.07, step=0.001,
         help="Minimum cosine similarity score required to draw an edge."
     )
     max_edges = st.sidebar.number_input(
         "Max Edges per Node", 
-        min_value=1, max_value=20, value=5, step=1,
+        min_value=1, max_value=20, value=4, step=1,
         help="Strict limit on connections to prevent central 'blob' hubs."
     )
     remove_isolated = st.sidebar.checkbox("Remove Isolated Nodes", value=False)
