@@ -93,7 +93,8 @@ or the religion cluster:
 <img src="figures/religion_cluster.png" width="100%" style="max-width: 500px;" alt="Religion cluster">
 
 Most connections in the graph make sense intuitively, and the edges can be inspected showing the top shared words between the subreddit. For example, ADHD and Drugs both seem to commonly talk about ADHD medication which seem to commonly be absused as drugs:
-![alt text](figures/drugs_adhd.png)
+
+<img src="figures/drugs_adhd.png" width="100%" style="max-width: 500px;" alt="Drugs ADHD">
 
 ### Exploring parameter settings
 We discovered that even slight changes of some paramters can cause vastly different looking graphs. For example changing the similarity theshold from the default 0.07 to slightly higher values results in a way less connected graph and many isolated nodes, showing that most of the similarity scores are rather small, while some parameters such as keep top N words have a smaller impact on the resulting graph and usually only slightly change the similarity scores between subreddits.
@@ -102,8 +103,8 @@ The max subreddit apprearance parameter also has a high impact on most of the gr
 
 | 25% Appearance | 60% Appearance |
 | :--- | :--- |
-| ### Full Graph (25%)<br><br><img src="figures/appearance_25.png" width="100%" alt="Full graph at 25% appearance"><br><br>Overview of the entire network structure under a lower appearance threshold, capturing broad connectivity and peripheral nodes. | ### Full Graph (60%)<br><br><img src="figures/appearance_60.png" width="100%" alt="Full graph at 60% appearance"><br><br>Overview of the network skeleton filtered at a higher threshold, revealing the most prominent and central structural components. |
-| ### Cluster View (25%)<br><br><img src="figures/lol_25.png" width="100%" alt="Cluster at 25% appearance"><br><br>Detailed, zoomed-in look at a local cluster subgraph, including weaker community-spanning links. | ### Cluster View (60%)<br><br><img src="figures/lol_60.png" width="100%" alt="Cluster at 60% appearance"><br><br>Focused visualization of the core sub-graph members, isolating the most tightly bound relationships. |
+| Full Graph (25%)<br><br><img src="figures/appearance_25.png" width="100%" alt="Full graph at 25% appearance"> | Full Graph (60%)<br><br><img src="figures/appearance_60.png" width="100%" alt="Full graph at 60% appearance"> |
+| Cluster View (25%)<br><br><img src="figures/lol_25.png" width="100%" alt="Cluster at 25% appearance"> | Cluster View (60%)<br><br><img src="figures/lol_60.png" width="100%" alt="Cluster at 60% appearance"> |
 
 
 We also investigated the difference between the different featurization methods (raw word count, relevance, tf-idf) and concluded that while there are slight differences, the general appearance of the graph stays mostly the same. Also, not using latent semantic analysis to reduce the number of dimensions generally decreases similarity scores and connectedness of the graph, but this can be counteracted by decreasing the similarity threshold as well.
