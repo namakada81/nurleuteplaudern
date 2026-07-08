@@ -77,16 +77,20 @@ We also drop words that appear in more than a set percentage of all subreddits (
 
 ### Exploring the Graph
 The interactive App can be used to explore different settings and the resulting graphs. Using the default settings we chose, the resulting graph looks like this:
-![Default graph](figures/default_settings.png)
+
+<img src="figures/default_settings.png" width="100%" style="max-width: 700px;" alt="Default graph">
 
 We can easily find many clusters that intuitively make sense, such as the tech cluster:
-![alt text](figures/tech_cluster.png)
+
+<img src="figures/tech_cluster.png" width="100%" style="max-width: 500px;" alt="Tech cluster">
 
 or the politics cluster:
-![alt text](figures/politics_cluster.png)
+
+<img src="figures/politics_cluster.png" width="100%" style="max-width: 500px;" alt="Politics cluster">
 
 or the religion cluster:
-![alt text](figures/religion_cluster.png) 
+
+<img src="figures/religion_cluster.png" width="100%" style="max-width: 500px;" alt="Religion cluster">
 
 Most connections in the graph make sense intuitively, and the edges can be inspected showing the top shared words between the subreddit. For example, ADHD and Drugs both seem to commonly talk about ADHD medication which seem to commonly be absused as drugs:
 ![alt text](figures/drugs_adhd.png)
@@ -96,7 +100,10 @@ We discovered that even slight changes of some paramters can cause vastly differ
 
 The max subreddit apprearance parameter also has a high impact on most of the graph, where an decrease in allowed subreddit appearance (= filtering out more of the common shared words) quickly leads to a highly disconnected graph when not adjusting the other parameters. Interestingly in this scenario, we can see that some highly specific clusters (like the League of Legends / Smite / Dota cluster) still stay connected, because they have a really large vocabulary of unique words (e.g. champion names, specific gaming terms like "ult", "gank", or "laning" which do not get filtered out even with the higher filtering settings), while more general connections get removed rather quickly.
 
-![Full graph at 25% appearance](figures/appearance_25.png) ![Full graph at 60% appearance](figures/appearance_60.png) ![cluster at 25% appearance](figures/lol_25.png) ![cluster at 60% appearance](figures/lol_60.png)
+| 25% Appearance | 60% Appearance |
+| :--- | :--- |
+| ### Full Graph (25%)<br><br><img src="figures/appearance_25.png" width="100%" alt="Full graph at 25% appearance"><br><br>Overview of the entire network structure under a lower appearance threshold, capturing broad connectivity and peripheral nodes. | ### Full Graph (60%)<br><br><img src="figures/appearance_60.png" width="100%" alt="Full graph at 60% appearance"><br><br>Overview of the network skeleton filtered at a higher threshold, revealing the most prominent and central structural components. |
+| ### Cluster View (25%)<br><br><img src="figures/lol_25.png" width="100%" alt="Cluster at 25% appearance"><br><br>Detailed, zoomed-in look at a local cluster subgraph, including weaker community-spanning links. | ### Cluster View (60%)<br><br><img src="figures/lol_60.png" width="100%" alt="Cluster at 60% appearance"><br><br>Focused visualization of the core sub-graph members, isolating the most tightly bound relationships. |
 
 
 We also investigated the difference between the different featurization methods (raw word count, relevance, tf-idf) and concluded that while there are slight differences, the general appearance of the graph stays mostly the same. Also, not using latent semantic analysis to reduce the number of dimensions generally decreases similarity scores and connectedness of the graph, but this can be counteracted by decreasing the similarity threshold as well.
