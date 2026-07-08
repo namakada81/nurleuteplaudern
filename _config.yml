@@ -7,7 +7,6 @@ relative_links:
   enabled: true
   collections: true
 include:
-#  - README.md
-  - Report.md
+  - README.md
 
 theme: jekyll-theme-minimal
