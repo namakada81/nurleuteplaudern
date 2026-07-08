@@ -1,5 +1,5 @@
 title: Document Analysis Semester Project
-description: This repository is a GitHub Pages template for Document Analysis course projects. 
+description: This is the Project Report for the Document Analysis Project "A Map of Reddit, Drawn from Words" by Lucas Cimerman, Lukas Mauz and Roman Lohmiller (nurleuteplaudern)
 show_downloads: True
 plugins:
   - jekyll-relative-links
@@ -7,7 +7,7 @@ relative_links:
   enabled: true
   collections: true
 include:
-  - README.md
-  - REPORT.md
+#  - README.md
+  - Report.md
 
 theme: jekyll-theme-minimal

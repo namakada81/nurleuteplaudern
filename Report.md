@@ -76,13 +76,15 @@ We also drop words that appear in more than a set percentage of all subreddits (
 ## Results and Discussion
 
 ### Exploring the Graph
-The interactive App can be used to explore different settings and the resulting graphs. Using the default settings we chose, the resulting graph looks like th
-is: ![Default graph](figures/default_settings.png)
+The interactive App can be used to explore different settings and the resulting graphs. Using the default settings we chose, the resulting graph looks like this:
+![Default graph](figures/default_settings.png)
 
 We can easily find many clusters that intuitively make sense, such as the tech cluster:
 ![alt text](figures/tech_cluster.png)
+
 or the politics cluster:
 ![alt text](figures/politics_cluster.png)
+
 or the religion cluster:
 ![alt text](figures/religion_cluster.png) 
 
