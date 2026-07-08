@@ -35,7 +35,8 @@ The pipeline splits into two stages. Running
 ```bash
 python mine_tokens.py
 ```
-does the expensive one-time work of calculating the subreddit specific word frequencies and saves the result to a file.
+does the expensive one-time work of calculating the subreddit specific word frequencies and saves the result to a file. 
+For the readers convinience, we precomputed this file and added it to the git repository, as the computation can be lengthy.
 
 
 ```bash
@@ -68,11 +69,12 @@ We also drop words that appear in more than a set percentage of all subreddits (
 **4. Similarity calculation:** Whatever the representation, we compute the cosine similarity between every pair of subreddits, giving a similarity matrix.
 
 
-**5. Graph construction and analysis:** To construct the graph, we draw an edge between two subreddits when their similarity clears a threshold. To eliminate clutter created by highly connective subreddits, we implemented an upper limit for node degrees.The result is rendered with Pyvis, so you can drag nodes around, hover a node to see its top words, and hover an edge to see the words two subreddits share. This allows for a highly interactive exploration of the resulting graph and facilitates an easy comparation between the pipelines options to find differences and similarities between the implemented possible options. Additionally, we also implemented three graph analysis methods that calculate different matrics for the resulting graph:
-- *Language Communities:* This method aims at finting clusters with high connectiveness in the graph. Depenging on the paramteters, this usually returns clusters with shared topics, such as Gaming (DestinyTheGame, Diablo, DnD, DotA2, Eve, Games, GlobalOffensive, Guildwars2) or Relationships (AskMen, AskReddit, AskWomen, OkCupid, TwoXChromosomes, relationship_advice, relationships, sex).
-- *Language Translators:* This method finds subreddits that act as bridges between subreddits. These subreddits have similar vocabulary to many other subreddits which are not strongly connteced to each other.
+**5. Graph construction and analysis:** To construct the graph, we draw an edge between two subreddits when their similarity clears a threshold. To eliminate clutter created by highly connective subreddits, we implemented an upper limit for node degrees.The result is rendered with Pyvis, so you can drag nodes around, hover a node to see its top words, and hover an edge to see the words two subreddits share. This allows for a highly interactive exploration of the resulting graph and facilitates an easy comparation between the pipelines options to find differences and similarities between the implemented possible options.
+To allow analysis of graphs with many edges (in our case the top 8 outgoing edges of each node), we also implemented three graph analysis methods that calculate different matrics for the resulting graph:
+- *Language Communities:* This method aims at finting clusters with high connectiveness in the graph. Depenging on the paramteters, this usually returns clusters with shared topics. We used the Louvain method to calcualte the communities.
+- *Language Translators:* This method finds subreddits that act as bridges between subreddits, by calculating the betweeness of each subreddit. Betweeness is a measure for the ratio of shortest paths this node is a part of. These subreddits have similar vocabulary to many other subreddits which are not strongly connteced to each other.
 - *Isolated Subreddits:* These subreddits are the ones which have the lowest maximum similarity to all other subreddits.
- 
+  
 ## Results and Discussion
 
 ### Exploring the Graph
@@ -108,6 +110,16 @@ The *max subreddit apprearance* parameter also has a high impact on most of the 
 
 
 We also investigated the difference between the different *featurization methods* (raw word count, relevance, tf-idf) and concluded that while there are slight differences, the general appearance of the graph stays mostly the same. Also, not using latent semantic analysis to reduce the number of dimensions generally decreases similarity scores and connectedness of the graph, but this can be counteracted by decreasing the similarity threshold as well.
+
+### Network analysis 
+
+*Language Communities:* The communities detected via modularity match the ones we found in our visual analysis of the graph and share common topics such as Gaming (DestinyTheGame, Diablo, DnD, DotA2, Eve, Games, GlobalOffensive, Guildwars2) or Relationships (AskMen, AskReddit, AskWomen, OkCupid, TwoXChromosomes, relationship_advice, relationships, sex)
+
+*Language Translators:* Our hypothesis was that bridges in the graph are also bridges in the vocabulary of the different subreddits. With default settings we get: r/funny, r/cars, r/books, r/SubredditDrama, r/Games, r/movies, r/CFB, r/unitedkingdom, r/IAmA, r/running as the top 10 highest betweeness subreddits. This makes sense since these are mostly generic subreddits that cover broad topics such as funny things, cars or drama, meaning they have connections into different clusters and thereby function as "shortcuts" between them.
+
+*Isolated Subreddits:* The top 10 most isolated subreddits are: r/asoiaf, r/SquaredCircle, r/pokemon, r/mylittlepony, r/starcraft, r/soccer, r/Eve, r/malefashionadvice, r/smashbros, r/masseffect. Most of these subreddits contain alot of named entities specific to themselves such as character names. Since named entities likely end up in the featurization as a dimension, the subreddits featurization points into a vastly different direction than any other subreddit.
+
+
 
 ## Conclusion
 Our method of filtering out a small number of relevant words per subreddit and computing similarities works pretty well and yields stable results. The Streamlit application is a powerful tool to understand and comparte the different implemented methods and filters, and can produce a variety of different graphs. The tool is also a fun way to interactively explore connections between subreddits and find interesing and sometimes unexpected shared vocabulary. Overall, we conclude that any of the featurization methods can yield interesting and meaningful results if the parameters are tuned accordingly, but the graph is often very cluttered and highly connected or very sparse, making manual exploration difficult with many parameter settings. Also directly comparing large graphs visually is often difficult, especially for highly connected graphs, showing the importance of automated network analysis methods and statistics.

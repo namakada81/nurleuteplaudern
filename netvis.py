@@ -324,7 +324,7 @@ def main():
     if st.sidebar.button("Run Network Analysis"):
         st.subheader("Network Analysis (current filter settings)")
         with st.spinner("Analyzing network..."):
-            report = analyze(similarity_df)
+            report = analyze(similarity_df, graph_similarity_threshold=graph_edge_similarity_threshold, k=8)
         st.code(report)
 
 if __name__ == "__main__":
