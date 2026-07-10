@@ -1,8 +1,8 @@
-streamlit
-networkx
-pyvis
-pandas
-scikit-learn
-nltk
-datasets
-pyarrow
+datasets==5.0.0
+networkx==3.6.1
+nltk==3.9.4
+pandas==3.0.3
+pyarrow==24.0.0
+pyvis==0.3.2
+scikit-learn==1.9.0
+streamlit==1.58.0

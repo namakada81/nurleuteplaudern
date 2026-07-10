@@ -29,12 +29,17 @@ All python dependencies are listed in the `requirements.txt` and can be installe
 pip install -r requirements.txt
 ``` 
 
+Navigate to the `code/` directory:
+```bash
+cd code
+```
+
 The pipeline splits into two stages. Running
 ```bash
 python mine_tokens.py
 ```
 does the expensive one-time work of calculating the subreddit specific word frequencies and saves the result to a file. 
-For the reader's convenience, we precomputed this file and added it to the git repository, as the computation can be lengthy.
+For the reader's convenience, we precomputed this file and added it to the git repository (`results_0.0000001_300_freq.pickle` in the `code` directory), as the computation can be lengthy.
 
 
 ```bash
@@ -128,5 +133,5 @@ Our method of filtering out a small number of relevant words per subreddit and c
 | Team Member     | Contributions                                             |
 |-----------------|-----------------------------------------------------------|
 | Lukas Mauz      | network analysis methods, graph generation, report |
-| Lucas Cimerman  | tokenization, presentation, matrix calculations, report |
-| Roman Lohmiller | pre-filterig, similarity matrix calculations, graph generation, report |
+| Lucas Cimerman  | NLP pipeline, presentation, matrix calculations, report |
+| Roman Lohmiller | NLP pipiline, Streamlit app, graph generation, report |
